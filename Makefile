@@ -6,7 +6,9 @@
 PACKAGE_NAME=hdmi_service
 
 CFLAGS += -c -Wall -O2 -fPIC
-LDFLAGS += -L./ -lpthread -shared
+# no-as-needed is a work-around, pthread is dropped from the DT_NEEDED
+# for some reason, and yet the final link fails due to missing symbols
+LDFLAGS += -L./ -Wl,--no-as-needed -lpthread -shared
 LDFLAGS_2 = -L./
 INCLUDES += -I./include
 HDMILIBS = hdmiservice.so
