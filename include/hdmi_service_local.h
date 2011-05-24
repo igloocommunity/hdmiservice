@@ -82,6 +82,7 @@ struct video_format *video_formats_get(void);
 void set_vesacea_prio_all(void);
 int hdmi_fb_chres(__u8 cea, __u8 vesaceanr);
 int vesaceaprio_set(__u8 len, __u8 *data);
+void vesacea_prio_default(void);
 int hdmievclr(__u8 mask);
 void thread_kevent_fn(void *arg);
 int hdmiplug_subscribe(void);

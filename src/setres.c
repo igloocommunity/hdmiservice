@@ -46,7 +46,8 @@ int vesacea_supported(int *nr, struct vesacea vesacea[])
 		if (video_formats[index].sink_support) {
 			vesacea[*nr].cea = video_formats[index].cea;
 			vesacea[*nr].nr = video_formats[index].vesaceanr;
-			LOGHDMILIB2("cea:%d nr:%d", vesacea[*nr].cea, vesacea[*nr].nr);
+			LOGHDMILIB2("cea:%d nr:%d", vesacea[*nr].cea,
+							vesacea[*nr].nr);
 			(*nr)++;
 		}
 	}
@@ -174,31 +175,31 @@ static int vesaceanrtovar(struct fb_var_screeninfo *var, __u8 cea,
 	return -EINVAL;
 }
 
-static void vesacea_prio_default(void)
+void vesacea_prio_default(void)
 {
 	/* 1920x1080P@30 */
 	vesaceaprio[0].cea = 1;
 	vesaceaprio[0].nr = 34;
 
-	/* 1920x1080P@25 */
+	/* 1280x720P@60 */
 	vesaceaprio[1].cea = 1;
-	vesaceaprio[1].nr = 33;
+	vesaceaprio[1].nr = 4;
+
+	/* 1920x1080P@25 */
+	vesaceaprio[2].cea = 1;
+	vesaceaprio[2].nr = 33;
 
 	/* 1920x1080P@24 */
-	vesaceaprio[2].cea = 1;
-	vesaceaprio[2].nr = 32;
+	vesaceaprio[3].cea = 1;
+	vesaceaprio[3].nr = 32;
 
 	/* 1920x1080I@60 */
-	vesaceaprio[3].cea = 1;
-	vesaceaprio[3].nr = 5;
+	vesaceaprio[4].cea = 1;
+	vesaceaprio[4].nr = 5;
 
 	/* 1920x1080I@30 */
-	vesaceaprio[4].cea = 1;
-	vesaceaprio[4].nr = 20;
-
-	/* 1280x720P@60 */
 	vesaceaprio[5].cea = 1;
-	vesaceaprio[5].nr = 4;
+	vesaceaprio[5].nr = 20;
 
 	/* 1280x720P@50 */
 	vesaceaprio[6].cea = 1;
@@ -231,8 +232,6 @@ static void set_vesacea_prio(__u8 cea, __u8 vesaceanr, __u8 prio)
 void set_vesacea_prio_all(void)
 {
 	int index;
-
-	vesacea_prio_default();
 
 	/* Set cea prio. Continue until prio = 0 or maxsize */
 	for (index = 0; index < CEAPRIO_MAX_SIZE; index++) {

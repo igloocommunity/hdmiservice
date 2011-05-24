@@ -56,11 +56,12 @@ int clientsocket_get(void)
 /* Client socket thread. Handles incoming socket messages */
 static void thread_sockclient_fn(void *arg)
 {
-	int res;
+	int bytes = 0;
 	char buffer[SOCKET_DATA_MAX];
 	struct cmd_data cmd_data;
 	int cont = 1;
 	int sock;
+	int buf_index = 0;
 
 	LOGHDMILIB("%s begin", __func__);
 
@@ -69,20 +70,39 @@ static void thread_sockclient_fn(void *arg)
 	LOGHDMILIB("clisock:%d", sock);
 
 	while (cont) {
-		memset(buffer, 0, SOCKET_DATA_MAX);
-		res = read(sock, buffer, SOCKET_DATA_MAX);
-		if (res <= 0) {
-			LOGHDMILIB("clisocket closed:%d", res);
-			goto thread_sockclient_fn_end;
+		if (bytes < CMDBUF_OFFSET) {
+			/* Read from socket */
+			bytes += read(sock, buffer + buf_index,
+					SOCKET_DATA_MAX - buf_index);
+			if (bytes <= 0) {
+				LOGHDMILIB("clisocket closed:%d", bytes);
+				goto thread_sockclient_fn_end;
+			}
+
+			LOGHDMILIB("clisockread:%d", bytes);
+
+			if (bytes < CMDBUF_OFFSET)
+				/* Not enough data */
+				continue;
 		}
 
-		LOGHDMILIB("clisockread res:%d", res);
-
-		cmd_data.cmd = (__u32)buffer[0];
-		cmd_data.cmd_id = (__u32)buffer[4];
-		cmd_data.data_len = (__u32)buffer[8];
-		memcpy(cmd_data.data, &buffer[12], cmd_data.data_len);
+		/* Valid command */
+		cmd_data.cmd = (__u32)buffer[buf_index + CMD_OFFSET];
+		cmd_data.cmd_id = (__u32)buffer[buf_index + CMDID_OFFSET];
+		cmd_data.data_len = (__u32)buffer[buf_index + CMDLEN_OFFSET];
+		memcpy(cmd_data.data, &buffer[buf_index + CMDBUF_OFFSET],
+					cmd_data.data_len);
 		cmd_data.next = NULL;
+
+		/* Remaining bytes to handle */
+		bytes -= (CMDBUF_OFFSET + cmd_data.data_len);
+		buf_index += (CMDBUF_OFFSET + cmd_data.data_len);
+		if (bytes < 0)
+			bytes = 0;
+		if (bytes < CMDBUF_OFFSET) {
+			memcpy(buffer, buffer + buf_index, bytes);
+			buf_index = bytes;
+		}
 
 		/* Add to list */
 		cmd_add(&cmd_data);
@@ -98,7 +118,7 @@ thread_sockclient_fn_end:
 	close(sock);
 	clientsocket_set(-1);
 
-	LOGHDMILIB("%s end res:%d", __func__, res);
+	LOGHDMILIB("%s end: %d", __func__, bytes);
 	pthread_exit(NULL);
 }
 
@@ -226,10 +246,11 @@ static void thread_sockserver_fn(void *arg)
 		if (cmd_data.cmd == HDMI_EXIT) {
 			cont = 0;
 		} else {
-			cmd_data.cmd = (__u32)buffer[0];
-			cmd_data.cmd_id = (__u32)buffer[4];
-			cmd_data.data_len = (__u32)buffer[8];
-			memcpy(cmd_data.data, &buffer[12], cmd_data.data_len);
+			cmd_data.cmd = (__u32)buffer[CMD_OFFSET];
+			cmd_data.cmd_id = (__u32)buffer[CMDID_OFFSET];
+			cmd_data.data_len = (__u32)buffer[CMDLEN_OFFSET];
+			memcpy(cmd_data.data, &buffer[CMDBUF_OFFSET],
+						cmd_data.data_len);
 			cmd_data.next = NULL;
 
 			/* Send through callback fn */

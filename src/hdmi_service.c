@@ -293,7 +293,8 @@ static int hdmiplugged_handle(int *basic_audio_support)
 	while (res && (cnt < 3)) {
 		res = edid_read(0, data);
 		if (res == 0)
-			res = edid_parse0(data + 1, &extension, formats, nr_formats);
+			res = edid_parse0(data + 1, &extension, formats,
+						nr_formats);
 		if (res && (cnt < 2))
 			usleep(EDIDREAD_WAITTIME);
 		cnt++;
@@ -364,7 +365,8 @@ static int hdmiplugged_handle(int *basic_audio_support)
 		lseek(disponoff, 0, SEEK_SET);
 		read_res = read(disponoff, buf, sizeof(buf));
 		if (read_res <= 0) {
-			LOGHDMILIB("***** Failed to read %s *****", DISPONOFF_FILE);
+			LOGHDMILIB("***** Failed to read %s *****",
+						DISPONOFF_FILE);
 			close(disponoff);
 			ret = -5;
 			goto hdmiplugged_handle_end;
@@ -475,7 +477,8 @@ infofr_send_end:
 }
 
 /* Send plug event message on client socket */
-static int plugevent_send(__u32 cmd, int audio_support, int nr, struct vesacea vesacea[])
+static int plugevent_send(__u32 cmd, int audio_support, int nr,
+					struct vesacea vesacea[])
 {
 	int res = 0;
 	int val;
@@ -603,7 +606,6 @@ static int hdmi_eventcmd(void)
 		case HDMI_EDIDREQ:
 		case HDMI_FB_RES_SET:
 		case HDMI_HDCP_INIT:
-		case HDMI_VESACEAPRIO_SET:
 		case HDMI_INFOFR:
 			handlecmd = 0;
 			powerstate_get(&power_state);
@@ -675,7 +677,8 @@ static int hdmi_eventcmd(void)
 			break;
 
 		case HDMI_HDCP_INIT:
-			if (cmd_obj->data_len != (AES_KEYS_SIZE + 12))
+			if (cmd_obj->data_len !=
+					(AES_KEYS_SIZE + CMDBUF_OFFSET))
 				res = -1;
 			else
 				res = hdcp_init(cmd_obj->data);
@@ -710,7 +713,8 @@ static int hdmi_eventcmd(void)
 			break;
 		}
 
-		LOGHDMILIB("cmd_id:%x res:%d\n", cmd_obj->cmd_id, res);
+		LOGHDMILIB("cmd:%d cmd_id:%x res:%d\n", cmd_obj->cmd,
+							cmd_obj->cmd_id, res);
 
 		free(cmd_obj);
 
@@ -834,7 +838,6 @@ static void thread_main_fn(void *arg)
 int hdmi_service_init(int avoid_return_msg)
 {
 	int dummy = 0;
-	__u8 ceavesadata[2];
 	int socket;
 
 	LOGHDMILIB("%s begin", __func__);
@@ -846,10 +849,7 @@ int hdmi_service_init(int avoid_return_msg)
 	/* Set sysfs format to binary */
 	storeastext(0);
 
-	ceavesadata[0] = 0;
-	ceavesadata[1] = 0;
-	LOGHDMILIB("desired cea:%d nr:%d", ceavesadata[0], ceavesadata[1]);
-	vesaceaprio_set(1, ceavesadata);
+	vesacea_prio_default();
 
 	pthread_mutex_init(&event_mutex, NULL);
 	pthread_mutex_init(&cmd_mutex, NULL);
@@ -875,14 +875,14 @@ int hdmi_service_exit(void)
 	__u8 buf[32];
 	val = HDMI_EXIT;
 
-	memcpy(&buf[0], &val, 4);
+	memcpy(&buf[CMD_OFFSET], &val, 4);
 	/* cmd_id */
 	val = 0;
-	memcpy(&buf[4], &val, 4);
+	memcpy(&buf[CMDID_OFFSET], &val, 4);
 	/* len */
 	val = 0;
-	memcpy(&buf[8], &val, 4);
-	serversocket_write(12 + val, buf);
+	memcpy(&buf[CMDLEN_OFFSET], &val, 4);
+	serversocket_write(CMDBUF_OFFSET + val, buf);
 
 	return 0;
 }
@@ -893,14 +893,14 @@ int hdmi_service_enable(void)
 	__u8 buf[32];
 	val = HDMI_ENABLE;
 
-	memcpy(&buf[0], &val, 4);
+	memcpy(&buf[CMD_OFFSET], &val, 4);
 	/* cmd_id */
 	val = 0;
-	memcpy(&buf[4], &val, 4);
+	memcpy(&buf[CMDID_OFFSET], &val, 4);
 	/* len */
 	val = 0;
-	memcpy(&buf[8], &val, 4);
-	serversocket_write(12 + val, buf);
+	memcpy(&buf[CMDLEN_OFFSET], &val, 4);
+	serversocket_write(CMDBUF_OFFSET + val, buf);
 
 	return 0;
 }
@@ -911,14 +911,14 @@ int hdmi_service_disable(void)
 	__u8 buf[32];
 	val = HDMI_DISABLE;
 
-	memcpy(&buf[0], &val, 4);
+	memcpy(&buf[CMD_OFFSET], &val, 4);
 	/* cmd_id */
 	val = 0;
-	memcpy(&buf[4], &val, 4);
+	memcpy(&buf[CMDID_OFFSET], &val, 4);
 	/* len */
 	val = 0;
-	memcpy(&buf[8], &val, 4);
-	serversocket_write(12 + val, buf);
+	memcpy(&buf[CMDLEN_OFFSET], &val, 4);
+	serversocket_write(CMDBUF_OFFSET + val, buf);
 
 	return 0;
 }
@@ -941,17 +941,17 @@ int hdmi_service_resolution_set(int cea, int vesaceanr)
 	__u8 buf[32];
 
 	val = HDMI_FB_RES_SET;
-	memcpy(&buf[0], &val, 4);
+	memcpy(&buf[CMD_OFFSET], &val, 4);
 	/* cmd_id */
 	val = 0;
-	memcpy(&buf[4], &val, 4);
+	memcpy(&buf[CMDID_OFFSET], &val, 4);
 	/* len */
 	val = 2;
-	memcpy(&buf[8], &val, 4);
+	memcpy(&buf[CMDLEN_OFFSET], &val, 4);
 	/* data */
-	buf[12] = cea;
-	buf[13] = vesaceanr;
-	serversocket_write(12 + val, buf);
+	buf[CMDBUF_OFFSET] = cea;
+	buf[CMDBUF_OFFSET + 1] = vesaceanr;
+	serversocket_write(CMDBUF_OFFSET + val, buf);
 
 	return 0;
 }
@@ -962,14 +962,14 @@ int hdmi_service_fb_release(void)
 	__u8 buf[32];
 
 	val = HDMI_FB_RELEASE;
-	memcpy(&buf[0], &val, 4);
+	memcpy(&buf[CMD_OFFSET], &val, 4);
 	/* cmd_id */
 	val = 0;
-	memcpy(&buf[4], &val, 4);
+	memcpy(&buf[CMDID_OFFSET], &val, 4);
 	/* len */
 	val = 0;
-	memcpy(&buf[8], &val, 4);
-	serversocket_write(12 + val, buf);
+	memcpy(&buf[CMDLEN_OFFSET], &val, 4);
+	serversocket_write(CMDBUF_OFFSET + val, buf);
 
 	return 0;
 }
@@ -984,19 +984,19 @@ int hdmi_service_cec_send(__u8 initiator, __u8 destination, __u8 data_size,
 		return -1;
 
 	val = HDMI_CECSEND;
-	memcpy(&buf[0], &val, 4);
+	memcpy(&buf[CMD_OFFSET], &val, 4);
 	/* cmd_id */
 	val = 0;
-	memcpy(&buf[4], &val, 4);
+	memcpy(&buf[CMDID_OFFSET], &val, 4);
 	/* len */
 	val = data_size + 3;
-	memcpy(&buf[8], &val, 4);
+	memcpy(&buf[CMDLEN_OFFSET], &val, 4);
 	/* data */
-	buf[12] = initiator;
-	buf[13] = destination;
-	buf[14] = data_size;
-	memcpy(&buf[15], data, data_size);
-	serversocket_write(12 + val, buf);
+	buf[CMDBUF_OFFSET] = initiator;
+	buf[CMDBUF_OFFSET + 1] = destination;
+	buf[CMDBUF_OFFSET + 2] = data_size;
+	memcpy(&buf[CMDBUF_OFFSET + 3], data, data_size);
+	serversocket_write(CMDBUF_OFFSET + val, buf);
 
 	return 0;
 }
@@ -1010,16 +1010,16 @@ int hdmi_service_edid_request(__u8 block)
 		return -1;
 
 	val = HDMI_EDIDREQ;
-	memcpy(&buf[0], &val, 4);
+	memcpy(&buf[CMD_OFFSET], &val, 4);
 	/* cmd_id */
 	val = 0;
-	memcpy(&buf[4], &val, 4);
+	memcpy(&buf[CMDID_OFFSET], &val, 4);
 	/* len */
 	val = 1;
-	memcpy(&buf[8], &val, 4);
+	memcpy(&buf[CMDLEN_OFFSET], &val, 4);
 	/* data */
-	buf[12] = block;
-	serversocket_write(12 + val, buf);
+	buf[CMDBUF_OFFSET] = block;
+	serversocket_write(CMDBUF_OFFSET + val, buf);
 
 	return 0;
 }
@@ -1033,16 +1033,16 @@ int hdmi_service_hdcp_init(__u16 aes_size, __u8 *aes_data)
 		return -1;
 
 	val = HDMI_HDCP_INIT;
-	memcpy(&buf[0], &val, 4);
+	memcpy(&buf[CMD_OFFSET], &val, 4);
 	/* cmd_id */
 	val = 0;
-	memcpy(&buf[4], &val, 4);
+	memcpy(&buf[CMDID_OFFSET], &val, 4);
 	/* len */
 	val = aes_size;
-	memcpy(&buf[8], &val, 4);
+	memcpy(&buf[CMDLEN_OFFSET], &val, 4);
 	/* data */
-	memcpy(&buf[12], aes_data, aes_size);
-	serversocket_write(12 + val, buf);
+	memcpy(&buf[CMDBUF_OFFSET], aes_data, aes_size);
+	serversocket_write(CMDBUF_OFFSET + val, buf);
 
 	return 0;
 }
@@ -1057,20 +1057,20 @@ int hdmi_service_infoframe_send(__u8 type, __u8 version, __u8 crc,
 		return -1;
 
 	val = HDMI_INFOFR;
-	memcpy(&buf[0], &val, 4);
+	memcpy(&buf[CMD_OFFSET], &val, 4);
 	/* cmd_id */
 	val = 0;
-	memcpy(&buf[4], &val, 4);
+	memcpy(&buf[CMDID_OFFSET], &val, 4);
 	/* len */
 	val = data_size + 4;
-	memcpy(&buf[8], &val, 4);
+	memcpy(&buf[CMDLEN_OFFSET], &val, 4);
 	/* data */
-	buf[12] = type;
-	buf[13] = version;
-	buf[14] = crc;
-	buf[15] = data_size;
-	memcpy(&buf[16], data, data_size);
-	serversocket_write(12 + val, buf);
+	buf[CMDBUF_OFFSET] = type;
+	buf[CMDBUF_OFFSET + 1] = version;
+	buf[CMDBUF_OFFSET + 2] = crc;
+	buf[CMDBUF_OFFSET + 3] = data_size;
+	memcpy(&buf[CMDBUF_OFFSET + 4], data, data_size);
+	serversocket_write(CMDBUF_OFFSET + val, buf);
 
 	return 0;
 }
@@ -1083,22 +1083,22 @@ int hdmi_service_vesa_cea_prio_set(__u8 vesa_cea1, __u8 nr1,
 	__u8 buf[32];
 
 	val = HDMI_VESACEAPRIO_SET;
-	memcpy(&buf[0], &val, 4);
+	memcpy(&buf[CMD_OFFSET], &val, 4);
 	/* cmd_id */
 	val = 0;
-	memcpy(&buf[4], &val, 4);
+	memcpy(&buf[CMDID_OFFSET], &val, 4);
 	/* len */
 	val = 7;
-	memcpy(&buf[8], &val, 4);
+	memcpy(&buf[CMDLEN_OFFSET], &val, 4);
 	/* data */
-	buf[12] = 3;
-	buf[13] = vesa_cea1;
-	buf[14] = nr1;
-	buf[15] = vesa_cea2;
-	buf[16] = nr2;
-	buf[17] = vesa_cea3;
-	buf[18] = nr3;
-	serversocket_write(12 + val, buf);
+	buf[CMDBUF_OFFSET] = 3;
+	buf[CMDBUF_OFFSET + 1] = vesa_cea1;
+	buf[CMDBUF_OFFSET + 2] = nr1;
+	buf[CMDBUF_OFFSET + 3] = vesa_cea2;
+	buf[CMDBUF_OFFSET + 4] = nr2;
+	buf[CMDBUF_OFFSET + 5] = vesa_cea3;
+	buf[CMDBUF_OFFSET + 6] = nr3;
+	serversocket_write(CMDBUF_OFFSET + val, buf);
 
 	return 0;
 }
