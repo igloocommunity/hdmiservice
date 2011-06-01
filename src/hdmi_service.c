@@ -35,7 +35,7 @@ void (*hdmi_callback_fn)(int cmd, int data_length, __u8 *data) = NULL;
 #endif /*HDMI_SERVICE_USE_CALLBACK_FN*/
 int hdmi_events;
 enum hdmi_fb_state hdmi_fb_state;
-enum hdmi_plug_state hdmi_plug_state;
+enum hdmi_plug_state hdmi_plug_state = HDMI_PLUGUNDEF;
 struct cmd_data *cmd_data;
 int cmd_id_ind;
 
@@ -199,11 +199,6 @@ int hdmiplug_subscribe(void)
 		goto hdmiplug_subscribe_err2;
 	}
 
-	/* Unsubscribe */
-	res = write(plugdetenfd, plugdetdis_val, sizeof(plugdetdis_val));
-	if (res != sizeof(plugdetdis_val))
-		goto hdmiplug_subscribe_err1;
-
 	/* Subscribe */
 	res = write(plugdetenfd, plugdeten_val, sizeof(plugdeten_val));
 	if (res != sizeof(plugdeten_val))
@@ -296,7 +291,7 @@ static int hdmiplugged_handle(int *basic_audio_support)
 			res = edid_parse0(data + 1, &extension, formats,
 						nr_formats);
 		if (res && (cnt < 2))
-			usleep(EDIDREAD_WAITTIME);
+			usleep(EDIDREAD_WAITTIME0);
 		cnt++;
 	}
 	if (res) {
@@ -306,13 +301,23 @@ static int hdmiplugged_handle(int *basic_audio_support)
 
 	if (extension) {
 		/* Extension data exists */
-		if (edid_read(1, data) != 0) {
-			ret = -2;
-			goto hdmiplugged_handle_end;
+		cnt = 0;
+		res = -1;
+		while (res && (cnt < 3)) {
+			res = edid_read(1, data);
+			if (res == 0)
+				res = edid_parse1(data + 1, formats, nr_formats,
+							basic_audio_support,
+							&edid_latency);
+			if (res && (cnt < 2))
+				usleep(EDIDREAD_WAITTIME1);
+			cnt++;
 		}
 
-		edid_parse1(data + 1, formats, nr_formats,
-				basic_audio_support, &edid_latency);
+		if (res) {
+			ret = -1;
+			goto hdmiplugged_handle_end;
+		}
 
 		/* Set hdmi format to hdmi */
 		hdmi_format_set(HDMI_FORMAT_HDMI);

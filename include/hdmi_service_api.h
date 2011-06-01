@@ -16,7 +16,7 @@ extern "C" {
  * Set to 1 to stay alive when system suspends.
  * Set to 0 to sleep when system suspends.
  */
-#define HDMI_SERVICE_STAY_ALIVE_DURING_SUSPEND 1
+#define HDMI_SERVICE_STAY_ALIVE_DURING_SUSPEND 0
 
 /* If defined, socket usage is hidden for messages from service,
  * and a callback function is used instead

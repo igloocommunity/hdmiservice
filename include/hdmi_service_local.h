@@ -216,6 +216,7 @@ int hdmi_service_vesa_cea_prio_set(__u8 vesa_cea1, __u8 nr1,
 #define EDIDREAD_FAIL		-3
 #define EDIDREAD_NOEXT		-4
 #define EDIDREAD_NOVIDEO	-5
+#define EDIDREAD_BL1_TAG_REV_ERR -6
 #define HDCP_OK			0
 #define AESKEYS_FAIL		-1
 #define HDCPSTATE_FAIL		-2
@@ -230,6 +231,7 @@ int hdmi_service_vesa_cea_prio_set(__u8 vesa_cea1, __u8 nr1,
 #define EDID_BL0_ESTTIM1_OFFSET		0x23
 #define EDID_BL0_ESTTIM2_OFFSET		0x24
 #define EDID_BL0_STDTIM1_OFFSET		0x26
+#define EDID_BL1_TAG_OFFSET		0x00
 #define EDID_BL1_REVNR_OFFSET		0x01
 #define EDID_BL1_OFFSET_OFFSET		0x02
 #define EDID_BL1_AUDIO_SUPPORT_OFFSET	0x03
@@ -242,6 +244,8 @@ int hdmi_service_vesa_cea_prio_set(__u8 vesa_cea1, __u8 nr1,
 #define EDID_BL1_STDTIM9_2_FLAG_OFFSET	0x5A
 #define EDID_BL1_STDTIM9_3_FLAG_OFFSET	0x6C
 #define EDID_BL1_STDTIM9_BYTE_START	5
+#define EDID_BL1_TAG_EXPECTED		0x02
+#define EDID_BL1_REV_EXPECTED		0x03
 #define EDID_SVD_ID_MASK		0x7F
 #define EDID_EXTVER_3			0x03
 #define EDID_NO_DATA			0x04
@@ -282,7 +286,8 @@ int hdmi_service_vesa_cea_prio_set(__u8 vesa_cea1, __u8 nr1,
 #define STARTUP_DELAY_US	6000000
 #define HDCPAUTH_WAITTIME	1000000
 #define LOADAES_WAITTIME	250000
-#define EDIDREAD_WAITTIME	2000000
+#define EDIDREAD_WAITTIME0	2000000
+#define EDIDREAD_WAITTIME1	100000
 
 /* Socket listen thread */
 #define SOCKET_DATA_MAX 256

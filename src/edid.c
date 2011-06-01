@@ -322,6 +322,7 @@ int edid_parse0(__u8 *data, __u8 *extension, struct video_format formats[],
 int edid_parse1(__u8 *data, struct video_format formats[], int nr_formats,
 		int *basic_audio_support, struct edid_latency *edid_latency)
 {
+	__u8 tag;
 	__u8 rev;
 	__u8 offset;
 	__u8 blockp;
@@ -342,11 +343,16 @@ int edid_parse1(__u8 *data, struct video_format formats[], int nr_formats,
 	__u8 edidp;
 	__u8 *p;
 
+	tag = *(data + EDID_BL1_TAG_OFFSET);
 	rev = *(data + EDID_BL1_REVNR_OFFSET);
+	if ((tag != EDID_BL1_TAG_EXPECTED) || rev != EDID_BL1_REV_EXPECTED) {
+		LOGHDMILIB("edid bl1 tag:%02x or rev:%02x invalid", tag, rev);
+		return EDIDREAD_BL1_TAG_REV_ERR;
+	}
+
 	offset = *(data + EDID_BL1_OFFSET_OFFSET);
 
 	LOGHDMILIB("rev:%d offset:%d", rev, offset);
-
 	if ((rev != EDID_EXTVER_3) || (offset == 0) ||
 				(offset == EDID_NO_DATA)) {
 		LOGHDMILIB("%s", "No video block");
@@ -403,7 +409,7 @@ int edid_parse1(__u8 *data, struct video_format formats[], int nr_formats,
 			/* Video and Audio latency */
 			if ((length >= EDID_VSD_AUD_LAT) &&
 				(*(p + EDID_VSD_LATENCY_IND) &
-					EDID_VSD_LAT_FLD_MASK )) {
+					EDID_VSD_LAT_FLD_MASK)) {
 				edid_latency->video_latency =
 				2 * (*(p + EDID_VSD_VID_LAT) - 1);
 				edid_latency->audio_latency =
@@ -413,7 +419,7 @@ int edid_parse1(__u8 *data, struct video_format formats[], int nr_formats,
 			/* Interlaced Video and Audio latency */
 			if ((length >= EDID_VSD_INTLCD_AUD_LAT) &&
 				(*(p + EDID_VSD_LATENCY_IND) &
-					EDID_VSD_INTLCD_LAT_FLD_MASK )) {
+					EDID_VSD_INTLCD_LAT_FLD_MASK)) {
 				edid_latency->intlcd_video_latency =
 				2 * (*(p + EDID_VSD_INTLCD_VID_LAT) - 1);
 				edid_latency->audio_latency =
