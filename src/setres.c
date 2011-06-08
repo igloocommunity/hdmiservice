@@ -63,7 +63,7 @@ int video_formats_supported_hw(void)
 	char buf[FORMATS_MAX * 2 + 1];
 
 	/* Get hw supported formats */
-	vesacea = open(VESACEAFORMATS_FILE, O_RDONLY);
+	vesacea = dispdevice_file_open(VESACEAFORMATS_FILE, O_RDONLY);
 	if (vesacea < 0) {
 		LOGHDMILIB("***** Failed to open %s *****",
 					VESACEAFORMATS_FILE);
@@ -116,7 +116,7 @@ static int vesaceanrtovar(struct fb_var_screeninfo *var, __u8 cea,
 	int interlaced;
 
 	/* Request timing info */
-	timing = open(TIMING_FILE, O_RDWR);
+	timing = dispdevice_file_open(TIMING_FILE, O_RDWR);
 	if (timing < 0) {
 		LOGHDMILIB("***** Failed to open %s *****", TIMING_FILE);
 		return -1;
@@ -321,7 +321,7 @@ int hdmi_fb_chres(__u8 cea, __u8 vesaceanr)
 	__u8 num_buffers;
 
 	/* Get fb dev name */
-	disponoff = open(DISPONOFF_FILE, O_RDONLY);
+	disponoff = dispdevice_file_open(DISPONOFF_FILE, O_RDONLY);
 	if (disponoff < 0) {
 		LOGHDMILIB("***** Failed to open %s *****", DISPONOFF_FILE);
 		return -1;

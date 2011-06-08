@@ -20,6 +20,7 @@
 #include "linux/fb.h"
 #include <sys/socket.h>
 #include <utils/Log.h>
+#include <dirent.h>
 #include "../include/hdmi_service_api.h"
 #include "../include/hdmi_service_local.h"
 
@@ -38,11 +39,64 @@ enum hdmi_fb_state hdmi_fb_state;
 enum hdmi_plug_state hdmi_plug_state = HDMI_PLUGUNDEF;
 struct cmd_data *cmd_data;
 int cmd_id_ind;
+char dispdevice_path[64];
 
 const __u8 plugdetdis_val[] = {0x00, 0x00, 0x00};/* 00: disable, 00:ontime,
 								00: offtime*/
 const __u8 plugdeten_val[] = {0x01, 0x05, 0x02};/* 01: enable, 05:ontime,
 								02: offtime*/
+
+static int hdmidirsort(const struct dirent **a, const struct dirent **b)
+{
+	return 1;
+}
+
+/* Find the correct device path since the device minor number can vary */
+static int dispdevice_path_set(void)
+{
+	struct dirent **namelist;
+	int n;
+	int found = 0;
+
+	n = scandir(DISPDEVICE_PATH_1, &namelist, 0, hdmidirsort);
+	if (n < 0) {
+		LOGHDMILIB("scandir error");
+		return -1;
+	}
+
+	while (n--) {
+		if (!found && strncmp(namelist[n]->d_name, DISPDEVICE_PATH_2,
+				strlen(DISPDEVICE_PATH_2)) == 0) {
+			strcpy(dispdevice_path, namelist[n]->d_name);
+			LOGHDMILIB("%s found:%s\n", __func__, dispdevice_path);
+			found = 1;
+		}
+		free(namelist[n]);
+	}
+	free(namelist);
+	return 0;
+}
+
+static char *dispdevice_path_get(void)
+{
+	return &dispdevice_path[0];
+}
+
+int dispdevice_file_open(char *file, int attr)
+{
+	int fd = -1;
+	char fname[128];
+
+	if (dispdevice_path[0] == 0)
+		dispdevice_path_set();
+
+	if (dispdevice_path[0] != 0) {
+		sprintf(fname, "%s%s/%s", DISPDEVICE_PATH_1,
+				dispdevice_path_get(), file);
+		fd = open(fname, attr);
+	}
+	return fd;
+}
 
 int get_new_cmd_id_ind(void)
 {
@@ -159,7 +213,7 @@ static int hdmi_format_set(enum hdmi_format format)
 {
 	int fd;
 
-	fd = open(HDMIFORMAT_FILE, O_WRONLY);
+	fd = dispdevice_file_open(HDMIFORMAT_FILE, O_WRONLY);
 	if (fd < 0) {
 		LOGHDMILIB(" failed to open %s", HDMIFORMAT_FILE);
 		return -1;
@@ -220,10 +274,10 @@ static int stayalive(__u8 enable)
 	int cnt = 0;
 	int res;
 
-	stayalivefd = open(STAYALIVE_FILE, O_WRONLY);
+	stayalivefd = dispdevice_file_open(STAYALIVE_FILE, O_WRONLY);
 	while ((stayalivefd < 0) && (cnt++ < 30)) {
 		usleep(200000);
-		stayalivefd = open(STAYALIVE_FILE, O_WRONLY);
+		stayalivefd = dispdevice_file_open(STAYALIVE_FILE, O_WRONLY);
 	}
 	LOGHDMILIB("cnt:%d", cnt);
 
@@ -341,7 +395,7 @@ static int hdmiplugged_handle(int *basic_audio_support)
 
 	/* Check if fb is created */
 	/* Get fb dev name */
-	disponoff = open(DISPONOFF_FILE, O_RDWR);
+	disponoff = dispdevice_file_open(DISPONOFF_FILE, O_RDWR);
 	if (disponoff < 0) {
 		LOGHDMILIB("***** Failed to open %s *****", DISPONOFF_FILE);
 		ret = -3;
@@ -423,7 +477,7 @@ static int hdmi_fb_close(void)
 	}
 
 	/* Destroy frame buffer */
-	disponoff = open(DISPONOFF_FILE, O_WRONLY);
+	disponoff = dispdevice_file_open(DISPONOFF_FILE, O_WRONLY);
 	if (disponoff < 0) {
 		LOGHDMILIB("***** Failed to open %s *****", DISPONOFF_FILE);
 	} else {

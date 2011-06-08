@@ -100,6 +100,7 @@ int serversocket_write(int len, __u8 *data);
 int serversocket_close(void);
 int poweronoff(__u8 onoff);
 int clientsocket_send(__u8 *buf, int len);
+int dispdevice_file_open(char *file, int attr);
 
 int hdmi_service_init(int avoid_return_msg);
 int hdmi_service_exit(void);
@@ -148,7 +149,6 @@ int hdmi_service_vesa_cea_prio_set(__u8 vesa_cea1, __u8 nr1,
 #define EVENTCLR_FILE		"/sys/class/misc/hdmi/evclr"
 #define EVWAKEUP_FILE		"/sys/class/misc/hdmi/evwakeup"
 #define EDIDREAD_FILE		"/sys/class/misc/hdmi/edidread"
-#define DISPONOFF_FILE		"/sys/devices/av8100_hdmi.2/disponoff"
 #define HDCPCHKAESOTP_FILE	"/sys/class/misc/hdmi/hdcpchkaesotp"
 #define HDCPLOADAES_FILE	"/sys/class/misc/hdmi/hdcploadaes"
 #define HDCPSTATEGET_FILE	"/sys/class/misc/hdmi/hdcpstateget"
@@ -159,10 +159,14 @@ int hdmi_service_vesa_cea_prio_set(__u8 vesa_cea1, __u8 nr1,
 #define CECREAD_FILE		"/sys/class/misc/hdmi/cecread"
 #define INFOFRSEND_FILE		"/sys/class/misc/hdmi/infofrsend"
 #define POWERONOFF_FILE		"/sys/class/misc/hdmi/poweronoff"
-#define HDMIFORMAT_FILE		"/sys/devices/av8100_hdmi.2/hdmisdtvswitch"
-#define VESACEAFORMATS_FILE	"/sys/devices/av8100_hdmi.2/vesacea"
-#define TIMING_FILE		"/sys/devices/av8100_hdmi.2/timing"
-#define STAYALIVE_FILE		"/sys/devices/av8100_hdmi.2/stayalive"
+
+#define DISPDEVICE_PATH_1	"/sys/devices/"
+#define DISPDEVICE_PATH_2	"av8100_hdmi"
+#define DISPONOFF_FILE		"disponoff"
+#define HDMIFORMAT_FILE		"hdmisdtvswitch"
+#define VESACEAFORMATS_FILE	"vesacea"
+#define TIMING_FILE		"timing"
+#define STAYALIVE_FILE		"stayalive"
 
 #define STOREASTEXT_STR		"01"	/* Use hextext format in sysfs files */
 #define STOREASBIN_STR		"00"	/* Use binary format in sysfs files */
