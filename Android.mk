@@ -32,5 +32,5 @@ LOCAL_SRC_FILES := src/hdmi_service_start.c
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
 LOCAL_SHARED_LIBRARIES := libhdmi_service
 LOCAL_MODULE := hdmi_service_st
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 include $(BUILD_EXECUTABLE)
