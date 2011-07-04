@@ -7,6 +7,7 @@
 
 #include <unistd.h>     /* Symbolic Constants */
 #include <sys/types.h>  /* Primitive System Data Types */
+#include <linux/types.h>
 #include <errno.h>      /* Errors */
 #include <stdarg.h>
 #include <stdio.h>      /* Input/Output */
@@ -15,7 +16,9 @@
 #include <fcntl.h>
 #include <time.h>
 #include <ctype.h>
+#ifdef ANDROID
 #include <utils/Log.h>
+#endif
 #include "../include/hdmi_service_api.h"
 #include "../include/hdmi_service_local.h"
 
@@ -164,7 +167,6 @@ int edid_read(__u8 block, __u8 *data)
 	int size;
 
 	LOGHDMILIB("EDID read blk %d", block);
-
 	/* Request edid block 0 */
 	edidread = open(EDIDREAD_FILE, O_RDWR);
 	if (edidread < 0) {
@@ -211,7 +213,6 @@ int edid_parse0(__u8 *data, __u8 *extension, struct video_format formats[],
 	__u8 version;
 	__u8 revision;
 	__u8 est_timing;
-	int findex;
 	int vesa_nr;
 	int bit;
 	int cnt;
@@ -288,10 +289,12 @@ int edid_parse0(__u8 *data, __u8 *extension, struct video_format formats[],
 		edidp = EDID_BL0_STDTIM1_OFFSET + index * 2;
 		xres = (*(data + edidp) + 31) * 8;
 		byte = *(data + edidp + 1);
-		ar_index = (byte * EDID_STDTIM_AR_MASK) >> EDID_STDTIM_AR_SHIFT;
+		ar_index = (byte & EDID_STDTIM_AR_MASK) >> EDID_STDTIM_AR_SHIFT;
 		yres = xres * edid_stdtim_ar[ar_index].y /
 					edid_stdtim_ar[ar_index].x;
-		freq = (byte * EDID_STDTIM_FREQ_MASK) >> EDID_STDTIM_FREQ_SHIFT;
+		freq = 60 + ((byte & EDID_STDTIM_FREQ_MASK) >>
+				EDID_STDTIM_FREQ_SHIFT);
+		LOGHDMILIB2("xres:%d yres:%d freq:%d", xres, yres, freq);
 		vesa_nr = get_vesanr_from_std_timing(xres, yres, freq);
 		if (vesa_nr < 1)
 			continue;
@@ -484,12 +487,14 @@ int edid_parse1(__u8 *data, struct video_format formats[], int nr_formats,
 			edidp += EDID_BL1_STDTIM9_BYTE_START + index * 2;
 			xres = (*(data + edidp) + 31) * 8;
 			byte = *(data + edidp + 1);
-			ar_index = (byte * EDID_STDTIM_AR_MASK) >>
+			ar_index = (byte & EDID_STDTIM_AR_MASK) >>
 						EDID_STDTIM_AR_SHIFT;
 			yres = xres * edid_stdtim_ar[ar_index].y /
 						edid_stdtim_ar[ar_index].x;
-			freq = (byte * EDID_STDTIM_FREQ_MASK) >>
-						EDID_STDTIM_FREQ_SHIFT;
+			freq = 60 + ((byte & EDID_STDTIM_FREQ_MASK) >>
+						EDID_STDTIM_FREQ_SHIFT);
+			LOGHDMILIB2("xres:%d yres:%d freq:%d", xres, yres,
+									freq);
 			vesa_nr = get_vesanr_from_std_timing(xres, yres, freq);
 			LOGHDMILIB2("StdTim9to16 try vesa_nr:%d", vesa_nr);
 			for (cnt = 0; cnt < nr_formats; cnt++) {

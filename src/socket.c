@@ -7,6 +7,7 @@
 
 #include <unistd.h>     /* Symbolic Constants */
 #include <sys/types.h>  /* Primitive System Data Types */
+#include <linux/types.h>
 #include <errno.h>      /* Errors */
 #include <stdarg.h>
 #include <stdio.h>      /* Input/Output */
@@ -18,7 +19,9 @@
 #include <ctype.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#ifdef ANDROID
 #include <utils/Log.h>
+#endif
 #include "../include/hdmi_service_api.h"
 #include "../include/hdmi_service_local.h"
 
@@ -54,7 +57,7 @@ int clientsocket_get(void)
 }
 
 /* Client socket thread. Handles incoming socket messages */
-static void thread_sockclient_fn(void *arg)
+static void thread_sockclient_fn(int *arg)
 {
 	int bytes = 0;
 	char buffer[SOCKET_DATA_MAX];
@@ -65,7 +68,7 @@ static void thread_sockclient_fn(void *arg)
 
 	LOGHDMILIB("%s begin", __func__);
 
-	sock = (int)arg;
+	sock = *arg;
 	clientsocket_set(sock);
 	LOGHDMILIB("clisock:%d", sock);
 
@@ -154,8 +157,6 @@ void thread_socklisten_fn(void *arg)
 	struct sockaddr_un serv_addr;
 	struct sockaddr_un cli_addr;
 	int res;
-	fd_set descr;
-	struct timeval timeout;
 	int sockl;
 
 	LOGHDMILIB("%s begin", __func__);
@@ -201,7 +202,7 @@ void thread_socklisten_fn(void *arg)
 		if (socknew >= 0)
 			/* Create a client thread */
 			pthread_create(&thread_sockclient, NULL,
-				(void *)thread_sockclient_fn, (void *)socknew);
+				(void *)thread_sockclient_fn, (void *)&socknew);
 	}
 
 thread_socklisten_fn_end:
@@ -275,7 +276,6 @@ int serversocket_create(int avoid_return_msg)
 	int sock;
 	int len;
 	struct sockaddr_un addr;
-	int result;
 	int n;
 
 	LOGHDMILIB("%s begin", __func__);

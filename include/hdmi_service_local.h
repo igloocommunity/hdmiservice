@@ -131,17 +131,24 @@ int hdmi_service_vesa_cea_prio_set(__u8 vesa_cea1, __u8 nr1,
 #define true 1
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+#ifdef ANDROID
+#define FBPATH			"/dev/graphics/"
 #define LOGHDMILIB LOGE
 #define LOGHDMILIB2 LOGE
 #define LOGHDMILIB3(format, ...)
-
-#ifdef ANDROID
-#define FBPATH			"/dev/graphics/"
 #else
 #define FBPATH			"/dev/"
+#define LOGHDR "libhdmi:"
+#define LOGHDMILIB(format, ...) printf(LOGHDR format"\r\n", __VA_ARGS__)
+#define LOGHDMILIB2(format, ...) printf(LOGHDR format"\r\n", __VA_ARGS__)
+#define LOGHDMILIB3(format, ...) printf(LOGHDR format"\r\n", __VA_ARGS__)
 #endif
 
+#ifdef ANDROID
 #define SOCKET_LISTEN_PATH	"/dev/socket/hdmi_listen"
+#else
+#define SOCKET_LISTEN_PATH	"/dev/hdmi_listen"
+#endif
 
 #define STOREASTEXT_FILE	"/sys/class/misc/hdmi/storeastext"
 #define PLUGDETEN_FILE		"/sys/class/misc/hdmi/plugdeten"

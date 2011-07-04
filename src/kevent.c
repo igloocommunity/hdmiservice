@@ -7,6 +7,7 @@
 
 #include <unistd.h>     /* Symbolic Constants */
 #include <sys/types.h>  /* Primitive System Data Types */
+#include <linux/types.h>
 #include <errno.h>      /* Errors */
 #include <stdarg.h>
 #include <stdio.h>      /* Input/Output */
@@ -17,7 +18,9 @@
 #include <time.h>
 #include <ctype.h>
 #include <sys/poll.h>
+#ifdef ANDROID
 #include <utils/Log.h>
+#endif
 #include "../include/hdmi_service_api.h"
 #include "../include/hdmi_service_local.h"
 
@@ -90,15 +93,17 @@ static int hdmieventfile_close(int fd)
 int hdmievclr(__u8 mask)
 {
 	int evclrfd;
+	int ret = 0;
 
 	evclrfd = open(EVENTCLR_FILE, O_WRONLY);
 	if (evclrfd < 0) {
 		LOGHDMILIB(" failed to open %s", EVENTCLR_FILE);
 		return -1;
 	}
-	write(evclrfd, &mask, 1);
+	if (write(evclrfd, &mask, 1) != 1)
+		ret = -2;
 	close(evclrfd);
-	return 0;
+	return ret;
 }
 
 /*

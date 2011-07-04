@@ -7,6 +7,8 @@
 
 #include <unistd.h>     /* Symbolic Constants */
 #include <sys/types.h>  /* Primitive System Data Types */
+#include <linux/types.h>
+#include <sys/ioctl.h>
 #include <errno.h>      /* Errors */
 #include <stdarg.h>
 #include <stdio.h>      /* Input/Output */
@@ -16,7 +18,9 @@
 #include <time.h>
 #include <ctype.h>
 #include "linux/fb.h"
+#ifdef ANDROID
 #include <utils/Log.h>
+#endif
 #include "../include/hdmi_service_api.h"
 #include "../include/hdmi_service_local.h"
 

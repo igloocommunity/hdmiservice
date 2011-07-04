@@ -7,6 +7,7 @@
 
 #include <unistd.h>     /* Symbolic Constants */
 #include <sys/types.h>  /* Primitive System Data Types */
+#include <linux/types.h>
 #include <errno.h>      /* Errors */
 #include <stdarg.h>
 #include <stdio.h>      /* Input/Output */
@@ -19,7 +20,9 @@
 #include <sys/ioctl.h>
 #include "linux/fb.h"
 #include <sys/socket.h>
+#ifdef ANDROID
 #include <utils/Log.h>
+#endif
 #include <dirent.h>
 #include "../include/hdmi_service_api.h"
 #include "../include/hdmi_service_local.h"
@@ -60,7 +63,7 @@ static int dispdevice_path_set(void)
 
 	n = scandir(DISPDEVICE_PATH_1, &namelist, 0, hdmidirsort);
 	if (n < 0) {
-		LOGHDMILIB("scandir error");
+		LOGHDMILIB("%s", "scandir error");
 		return -1;
 	}
 
@@ -158,16 +161,18 @@ static int hdmievwakeupfile_wr(void)
 int poweronoff(__u8 onoff)
 {
 	int pwrfd;
+	int ret = 0;
 
 	pwrfd = open(POWERONOFF_FILE, O_WRONLY);
 	if (pwrfd < 0) {
 		LOGHDMILIB(" failed to open %s", POWERONOFF_FILE);
 		return -1;
 	}
-	write(pwrfd, &onoff, 1);
+	if (write(pwrfd, &onoff, 1) != 1)
+		ret = -2;
 	close(pwrfd);
 
-	return 0;
+	return ret;
 }
 
 /* Get hw power */
@@ -212,16 +217,18 @@ static int plugstate_get(enum hdmi_plug_state *plug_state)
 static int hdmi_format_set(enum hdmi_format format)
 {
 	int fd;
+	int ret = 0;
 
 	fd = dispdevice_file_open(HDMIFORMAT_FILE, O_WRONLY);
 	if (fd < 0) {
 		LOGHDMILIB(" failed to open %s", HDMIFORMAT_FILE);
 		return -1;
 	}
-	write(fd, &format, 1);
+	if (write(fd, &format, 1) != 1)
+		ret = -2;
 	close(fd);
 
-	return 0;
+	return ret;
 }
 
 /* Send illegal state message on client socket */
@@ -229,7 +236,6 @@ static int illegalstate_send(__u32 cmd,  __u32 cmd_id)
 {
 	int val;
 	__u8 buf[16];
-	int sock;
 
 	val = cmd;
 	memcpy(&buf[CMD_OFFSET], &val, 4);
@@ -308,8 +314,6 @@ static int hdmiplugged_handle(int *basic_audio_support)
 	int disponoff;
 	char req_str[7];
 	int wr_res;
-	int fd;
-	char fbname[128];
 	char buf[128];
 	int read_res;
 	struct video_format *formats;
@@ -352,7 +356,6 @@ static int hdmiplugged_handle(int *basic_audio_support)
 		ret = -1;
 		goto hdmiplugged_handle_end;
 	}
-
 	if (extension) {
 		/* Extension data exists */
 		cnt = 0;
@@ -445,19 +448,11 @@ hdmiplugged_handle_end:
 
 static int hdmiunplugged_handle(void)
 {
-	enum hdmi_power_state power_state;
-
 	LOGHDMILIB("%s", "HDMIEVENT_HDMIUNPLUGGED");
 	plugstate_set(HDMI_UNPLUGGED);
 
 	/* Allow early suspend */
 	stayalive(0);
-	return 0;
-}
-
-static int hdmiunknownhandle(int event)
-{
-	LOGHDMILIB("HDMIEVENT_EVENTUNKNOWN: %d", event);
 	return 0;
 }
 
@@ -542,7 +537,6 @@ static int plugevent_send(__u32 cmd, int audio_support, int nr,
 	int res = 0;
 	int val;
 	__u8 buf[128];
-	int sock;
 	__u32 cmd_id;
 	int cnt;
 
@@ -631,7 +625,6 @@ int hdmi_event(int event)
 static int hdmi_eventcmd(void)
 {
 	struct cmd_data *cmd_obj = NULL;
-	struct cmd_data *del_obj;
 	int res = 0;
 	int ret = -1;
 	enum hdmi_power_state power_state;
@@ -1086,7 +1079,7 @@ int hdmi_service_edid_request(__u8 block)
 int hdmi_service_hdcp_init(__u16 aes_size, __u8 *aes_data)
 {
 	int val;
-	__u8 buf[300];
+	__u8 buf[AES_KEYS_SIZE + CMDBUF_OFFSET];
 
 	if (aes_size != AES_KEYS_SIZE)
 		return -1;

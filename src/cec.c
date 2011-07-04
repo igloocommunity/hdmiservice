@@ -7,6 +7,7 @@
 
 #include <unistd.h>     /* Symbolic Constants */
 #include <sys/types.h>  /* Primitive System Data Types */
+#include <linux/types.h>
 #include <errno.h>      /* Errors */
 #include <stdarg.h>
 #include <stdio.h>      /* Input/Output */
@@ -15,7 +16,9 @@
 #include <fcntl.h>
 #include <time.h>
 #include <ctype.h>
+#ifdef ANDROID
 #include <utils/Log.h>
+#endif
 #include "../include/hdmi_service_api.h"
 #include "../include/hdmi_service_local.h"
 
@@ -37,15 +40,18 @@ static int cectxcmdid_get(void)
 int cecrx_subscribe(void)
 {
 	int cecrxfd;
+	int ret = 0;
 
 	cecrxfd = open(CECRXEVEN_FILE, O_WRONLY);
 	if (cecrxfd < 0) {
 		LOGHDMILIB(" failed to open %s", CECRXEVEN_FILE);
 		return -1;
 	}
-	write(cecrxfd, cecrxeven_val, sizeof(cecrxeven_val));
+	if (write(cecrxfd, cecrxeven_val, sizeof(cecrxeven_val)) !=
+			sizeof(cecrxeven_val))
+		ret = -2;
 	close(cecrxfd);
-	return 0;
+	return ret;
 }
 
 int cecsenderr(void)

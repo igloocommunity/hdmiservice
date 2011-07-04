@@ -7,6 +7,7 @@
 
 #include <unistd.h>     /* Symbolic Constants */
 #include <sys/types.h>  /* Primitive System Data Types */
+#include <linux/types.h>
 #include <errno.h>      /* Errors */
 #include <stdarg.h>
 #include <stdio.h>      /* Input/Output */
@@ -16,7 +17,9 @@
 #include <time.h>
 #include <sys/ioctl.h>
 #include <ctype.h>
+#ifdef ANDROID
 #include <utils/Log.h>
+#endif
 #include "../include/hdmi_service_api.h"
 #include "../include/hdmi_service_local.h"
 
@@ -105,7 +108,6 @@ int hdcp_init(__u8 *aes)
 	int value = 0;
 	char buf[128];
 	int result = HDCP_OK;
-	int events;
 
 	/* Check if OTP is fused */
 	hdcpchkaesotp = open(HDCPCHKAESOTP_FILE, O_RDONLY);
@@ -133,8 +135,12 @@ int hdcp_init(__u8 *aes)
 			result = SYSFS_FILE_FAILED;
 			goto hdcp_end;
 		}
-		write(hdcpeven, hdcp_even_val, sizeof(hdcp_even_val));
+		res = write(hdcpeven, hdcp_even_val, sizeof(hdcp_even_val));
 		close(hdcpeven);
+		if (res != sizeof(hdcp_even_val)) {
+			result = SYSFS_FILE_FAILED;
+			goto hdcp_end;
+		}
 
 		/* Write aes keys */
 		hdcploadaes = open(HDCPLOADAES_FILE, O_WRONLY);
