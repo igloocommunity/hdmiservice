@@ -180,6 +180,7 @@ void thread_socklisten_fn(void *arg)
 	res = bind(sockl, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
 	if (res < 0) {
 		LOGHDMILIB("socket bind fail:%d", res);
+		close(sockl);
 		goto thread_socklisten_fn_end;
 	}
 
@@ -188,13 +189,18 @@ void thread_socklisten_fn(void *arg)
 	/* while loop is breaked by shutdown on listen socket */
 	while (1) {
 		/* Listen for incoming connection */
-		listen(sockl, SOCKET_MAX_CONN);
+		if (listen(sockl, SOCKET_MAX_CONN) != 0) {
+			LOGHDMILIB("%s listen error", __func__);
+			close(sockl);
+			goto thread_socklisten_fn_end;
+		}
 
 		/* Establish a client connection */
 		clilen = sizeof(cli_addr);
 		socknew = accept(sockl, (struct sockaddr *) &cli_addr, &clilen);
 		if (socknew < 0) {
 			LOGHDMILIB("socket accept fail:%d", socknew);
+			close(sockl);
 			goto thread_socklisten_fn_end;
 		}
 		LOGHDMILIB2("socket accept:%d", socknew);
@@ -284,6 +290,10 @@ int serversocket_create(int avoid_return_msg)
 
 	sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	LOGHDMILIB("sock:%d", sock);
+	if (sock < 0) {
+		LOGHDMILIB("%s %s", __func__, "socket create fail");
+		goto serversocket_create_end;
+	}
 
 	addr.sun_family = AF_UNIX;
 	strcpy(addr.sun_path, SOCKET_LISTEN_PATH);
@@ -293,13 +303,14 @@ int serversocket_create(int avoid_return_msg)
 	LOGHDMILIB("connect:%d", n);
 
 	if (n < 0) {
-		LOGHDMILIB("socket connect err:%d", n);
-		goto socket_test_end;
+		LOGHDMILIB("%s socket connect err:%d", __func__, n);
+		close(sock);
+		sock = -1;
 	}
 
-socket_test_end:
+serversocket_create_end:
 	LOGHDMILIB("%s end", __func__);
-	if (sock >= 0)
+	if (sock >= 0) {
 		serversocket_set(sock);
 		LOGHDMILIB("servsock:%d", sock);
 
@@ -308,6 +319,7 @@ socket_test_end:
 		pthread_create(&thread_sockserver, NULL,
 			(void *)thread_sockserver_fn, (void *)sock);
 #endif /*HDMI_SERVICE_USE_CALLBACK_FN*/
+	}
 	return sock;
 }
 
