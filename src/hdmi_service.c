@@ -340,8 +340,14 @@ static int hdmiplugged_handle(int *basic_audio_support)
 	struct edid_latency edid_latency = {-1, -1, -1, -1};
 	int res;
 	int ret = 0;
+	enum hdmi_plug_state plug_state;
 
 	LOGHDMILIB("%s", "HDMIEVENT_HDMIPLUGGED");
+
+	if ((plugstate_get(&plug_state) == 0) && (plug_state == HDMI_PLUGGED)) {
+		LOGHDMILIB("%s", "Already plugged, ignore");
+		return -1;
+	}
 
 	plugstate_set(HDMI_PLUGGED);
 	*basic_audio_support = 0;
@@ -466,7 +472,16 @@ hdmiplugged_handle_end:
 
 static int hdmiunplugged_handle(void)
 {
+	enum hdmi_plug_state plug_state;
+
 	LOGHDMILIB("%s", "HDMIEVENT_HDMIUNPLUGGED");
+
+	if ((plugstate_get(&plug_state) == 0) &&
+			(plug_state == HDMI_UNPLUGGED)) {
+		LOGHDMILIB("%s", "Already unplugged, ignore");
+		return -1;
+	}
+
 	plugstate_set(HDMI_UNPLUGGED);
 
 	/* Allow early suspend */
@@ -870,8 +885,8 @@ static void thread_main_fn(void *arg)
 						video_supported);
 			}
 		} else if (events & HDMIEVENT_HDMIUNPLUGGED) {
-			hdmiunplugged_handle();
-			plugevent_send(HDMI_UNPLUGGED_EV, 0, 0, NULL);
+			if (hdmiunplugged_handle() == 0)
+				plugevent_send(HDMI_UNPLUGGED_EV, 0, 0, NULL);
 		}
 
 		if (events & HDMIEVENT_CEC)

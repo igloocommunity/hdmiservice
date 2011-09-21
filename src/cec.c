@@ -155,6 +155,9 @@ int cecrx(void)
 	cecsize = read(cecreadfd, buf, sizeof(buf));
 	close(cecreadfd);
 
+	if (cecsize < 0)
+		return -1;
+
 	for (cnt = 0; cnt < cecsize; cnt++)
 		LOGHDMILIB2("cecrx[%d]:%x", cnt, buf[cnt]);
 
