@@ -13,9 +13,15 @@ HDMILIBS = hdmiservice.so
 
 build: hdmiservice.so hdmistart
 
-install: clean build
-	@$(PACKAGE_FILE) /usr/lib/hdmiservice.so $(CURDIR)/hdmiservice.so 755 0 0
-	@$(PACKAGE_FILE) /usr/bin/hdmistart $(CURDIR)/hdmistart 755 0 0
+install: build
+#	@$(PACKAGE_FILE) /usr/lib/hdmiservice.so $(CURDIR)/hdmiservice.so 755 0 0
+#	@$(PACKAGE_FILE) /usr/bin/hdmistart $(CURDIR)/hdmistart 755 0 0
+	mkdir -p $(DESTDIR)/usr/lib
+	mkdir -p $(DESTDIR)/usr/bin
+	mkdir -p $(DESTDIR)/usr/include
+	cp $(CURDIR)/hdmiservice.so $(DESTDIR)/usr/lib
+	cp $(CURDIR)/hdmistart $(DESTDIR)/usr/bin
+	cp $(CURDIR)/include/*.h $(DESTDIR)/usr/include
 
 %.o: src/%.c
 	${CC} ${CFLAGS} ${INCLUDES} -c $<
