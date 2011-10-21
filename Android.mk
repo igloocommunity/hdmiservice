@@ -13,6 +13,11 @@
 # limitations under the License.
 
 # Library
+# check for u5500
+ifeq ($(STE_HDMISERVICE_SET_PLATFORM),u5500)
+LOCAL_CFLAGS += -DSTE_PLATFORM_U5500=1
+endif #module configuration u5500
+
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 LOCAL_PRELINK_MODULE := false

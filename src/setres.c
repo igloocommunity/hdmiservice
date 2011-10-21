@@ -199,13 +199,30 @@ static int vesaceanrtovar(struct fb_var_screeninfo *var, __u8 cea,
 
 void vesacea_prio_default(void)
 {
-	/* 1920x1080P@30 */
-	vesaceaprio[0].cea = 1;
-	vesaceaprio[0].nr = 34;
+#ifdef STE_PLATFORM_U5500
+        /* 1280x720P@60 */
+        vesaceaprio[0].cea = 1;
+        vesaceaprio[0].nr = 4;
 
-	/* 1280x720P@60 */
-	vesaceaprio[1].cea = 1;
-	vesaceaprio[1].nr = 4;
+        /* 1280x720P@50 */
+        vesaceaprio[1].cea = 1;
+        vesaceaprio[1].nr = 19;
+
+        /* 720x480P@60 */
+        vesaceaprio[2].cea = 1;
+        vesaceaprio[2].nr = 3;
+
+        /* end of list */
+        vesaceaprio[3].cea = 0;
+        vesaceaprio[3].nr = 0;
+#else
+        /* 1920x1080P@30 */
+        vesaceaprio[0].cea = 1;
+        vesaceaprio[0].nr = 34;
+
+        /* 1280x720P@60 */
+        vesaceaprio[1].cea = 1;
+        vesaceaprio[1].nr = 4;
 
 	/* 1920x1080P@25 */
 	vesaceaprio[2].cea = 1;
@@ -234,6 +251,7 @@ void vesacea_prio_default(void)
 	/* end of list */
 	vesaceaprio[8].cea = 0;
 	vesaceaprio[8].nr = 0;
+#endif
 }
 
 static void set_vesacea_prio(__u8 cea, __u8 vesaceanr, __u8 prio)
