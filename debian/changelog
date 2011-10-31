@@ -1,3 +1,9 @@
+hdmiservice (1.0-1) unstable; urgency=low
+
+  * Add support for starting hdmiservice with Oneric display manager
+
+ -- Kalle Vahlman <kalle.vahlman@movial.com>  Mon, 31 Oct 2011 07:44:59 +0200
+
 hdmiservice (1.0) unstable; urgency=low
 
   * Initial Release.
