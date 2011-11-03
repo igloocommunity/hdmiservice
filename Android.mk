@@ -27,7 +27,7 @@ LOCAL_CFLAGS := -DANDROID
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
 LOCAL_SHARED_LIBRARIES := liblog
 LOCAL_MODULE := libhdmi_service
-LOCAL_MODULE_TAGS := eng
+LOCAL_MODULE_TAGS := optional
 include $(BUILD_SHARED_LIBRARY)
 
 # Executable, to be used to start service when there is no daemon
