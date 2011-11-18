@@ -13,17 +13,19 @@
 # limitations under the License.
 
 # Library
-# check for u5500
-ifeq ($(STE_HDMISERVICE_SET_PLATFORM),u5500)
-LOCAL_CFLAGS += -DSTE_PLATFORM_U5500=1
-endif #module configuration u5500
 
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
+
+# check for u5500
+ifeq ($(STE_HDMISERVICE_SET_PLATFORM),u5500)
+LOCAL_CFLAGS := -DSTE_PLATFORM_U5500
+endif #module configuration u5500
+
 LOCAL_PRELINK_MODULE := false
 LOCAL_SRC_FILES := src/hdmi_service_api.c src/hdmi_service.c src/cec.c \
 	src/edid.c src/hdcp.c src/setres.c src/kevent.c src/socket.c
-LOCAL_CFLAGS := -DANDROID
+LOCAL_CFLAGS += -DANDROID
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
 LOCAL_SHARED_LIBRARIES := liblog
 LOCAL_MODULE := libhdmi_service
