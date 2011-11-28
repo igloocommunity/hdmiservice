@@ -341,6 +341,7 @@ static int hdmiplugged_handle(int *basic_audio_support)
 	int res;
 	int ret = 0;
 	enum hdmi_plug_state plug_state;
+	int hdmi_support = 0;
 
 	LOGHDMILIB("%s", "HDMIEVENT_HDMIPLUGGED");
 
@@ -389,7 +390,8 @@ static int hdmiplugged_handle(int *basic_audio_support)
 			if (res == 0)
 				res = edid_parse1(data + 1, formats, nr_formats,
 							basic_audio_support,
-							&edid_latency);
+							&edid_latency,
+							&hdmi_support);
 			if (res && (cnt < 2))
 				usleep(EDIDREAD_WAITTIME1);
 			cnt++;
@@ -400,6 +402,9 @@ static int hdmiplugged_handle(int *basic_audio_support)
 			goto hdmiplugged_handle_end;
 		}
 
+	}
+
+	if (hdmi_support) {
 		/* Set hdmi format to hdmi */
 		hdmi_format_set(HDMI_FORMAT_HDMI);
 		cea = 1;

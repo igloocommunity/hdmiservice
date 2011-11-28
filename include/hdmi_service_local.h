@@ -88,7 +88,8 @@ int cecrx(void);
 int edid_read(__u8 block, __u8 *data);
 int edid_parse0(__u8 *data, __u8 *extension, struct video_format *, int size);
 int edid_parse1(__u8 *data, struct video_format formats[], int nr_formats,
-		int *basic_audio_support, struct edid_latency *edid_latency);
+		int *basic_audio_support, struct edid_latency *edid_latency,
+		int *hdmi);
 int edidreq(__u8 block, __u32 cmd_id);
 int hdcp_init(__u8 *aes);
 int hdcp_state(void);
@@ -274,7 +275,6 @@ int hdmi_service_vesa_cea_prio_set(__u8 vesa_cea1, __u8 nr1,
 #define EDID_BL1_STDTIM9_3_FLAG_OFFSET	0x6C
 #define EDID_BL1_STDTIM9_BYTE_START	5
 #define EDID_BL1_TAG_EXPECTED		0x02
-#define EDID_BL1_REV_EXPECTED		0x03
 #define EDID_SVD_ID_MASK		0x7F
 #define EDID_EXTVER_3			0x03
 #define EDID_NO_DATA			0x04

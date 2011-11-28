@@ -341,7 +341,8 @@ int edid_parse0(__u8 *data, __u8 *extension, struct video_format formats[],
 
 /* Parse EDID block 1 */
 int edid_parse1(__u8 *data, struct video_format formats[], int nr_formats,
-		int *basic_audio_support, struct edid_latency *edid_latency)
+		int *basic_audio_support, struct edid_latency *edid_latency,
+		int *hdmi)
 {
 	__u8 tag;
 	__u8 rev;
@@ -366,19 +367,19 @@ int edid_parse1(__u8 *data, struct video_format formats[], int nr_formats,
 
 	tag = *(data + EDID_BL1_TAG_OFFSET);
 	rev = *(data + EDID_BL1_REVNR_OFFSET);
-	if ((tag != EDID_BL1_TAG_EXPECTED) || rev != EDID_BL1_REV_EXPECTED) {
-		LOGHDMILIB("edid bl1 tag:%02x or rev:%02x invalid", tag, rev);
+	if (tag != EDID_BL1_TAG_EXPECTED) {
+		LOGHDMILIB("edid bl1 tag:%02x or rev:%02x", tag, rev);
 		return EDIDREAD_BL1_TAG_REV_ERR;
 	}
+
+	if (rev >= EDID_EXTVER_3)
+		*hdmi = 1;
+	else
+		*hdmi = 0; /* Only DVI */
 
 	offset = *(data + EDID_BL1_OFFSET_OFFSET);
 
 	LOGHDMILIB("rev:%d offset:%d", rev, offset);
-	if ((rev != EDID_EXTVER_3) || (offset == 0) ||
-				(offset == EDID_NO_DATA)) {
-		LOGHDMILIB("%s", "No video block");
-		return EDIDREAD_NOVIDEO;
-	}
 
 	/* Check Audio support */
 	if (*(data + EDID_BL1_AUDIO_SUPPORT_OFFSET) &
