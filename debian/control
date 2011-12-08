@@ -8,14 +8,14 @@ Homepage: http://igloocommunity.org
 
 Package: hdmiservice-dev
 Section: libdevel
-Architecture: any
+Architecture: armel
 Depends: hdmiservice (= ${binary:Version})
 Description: HDMI userspace control daemon library development files
  This package contains the HDMIservice library develompent files
 
 Package: hdmiservice
 Section: libs
-Architecture: any
+Architecture: armel
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: HDMI userspace control daemon
  HDMIservice is a userspace daemon to negotiate display modes for AV8100
