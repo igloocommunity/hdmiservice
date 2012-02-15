@@ -32,7 +32,7 @@ hdmiservice.so: cec.o edid.o hdcp.o hdmi_service_api.o hdmi_service.o kevent.o \
 	setres.o socket.o
 	$(CC) $(LDFLAGS) $^ -o $@
 
-hdmistart: hdmi_service_start.o
+hdmistart: hdmi_service_start.o $(HDMILIBS)
 	$(CC) $(LDFLAGS_2) $^ -o $@ $(HDMILIBS)
 
 clean:
